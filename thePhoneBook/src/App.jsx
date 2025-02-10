@@ -4,12 +4,14 @@ import Persons from './Persons'
 import PersonForm from './PersonForm'
 import axios from 'axios'
 import server from './service/server'
+import Notification from './Notification'
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [notification, setNotification] = useState({message : null, tyåe: ''});
 
   useEffect(() => {
      server
@@ -34,28 +36,34 @@ const App = () => {
       .create(personObject)
       .then(returnedResponse => {
         setPersons(persons.concat(returnedResponse));
+        setNotification({ message: `Added '${newName}'`, type: 'success' });
+        setTimeout(() => setNotification({ message: null, type: '' }), 5000);
         setNewName('');
         setNewPhone('');
       })
-       
-    }    
+      .catch(error => {
+        setNotification({ message: 'Failed to add person.', type: 'error' });
+      });
+  }
+};
+
+const deletePerson = (id) => {
+  const confirm = window.confirm('You sure about this?');
+  if (!confirm) {
+    return;
   }
 
-  const deletePerson = (id) => {
-
-    const confirm = window.confirm('You sure about this?')
-
-    if (!confirm){
-      return;
-    }
-
-    console.log(id)
-    server.deletePhone(id)
-    .then( () => {  
+  server.deletePhone(id)
+    .then(() => {
       setPersons(persons.filter(person => person.id !== id));
-    }
-     )
-  }
+      setNotification({ message: 'Person deleted successfully.', type: 'success' });
+      setTimeout(() => setNotification({ message: null, type: '' }), 5000);
+    })
+    .catch(error => {
+      setNotification({ message: 'Failed to delete person. They may have already been removed.', type: 'error' });
+      server.getAll().then(updatedPersons => setPersons(updatedPersons));
+    });
+};
 
   const handleNameChange = (event) => {
      setNewName(event.target.value)
@@ -75,7 +83,9 @@ const App = () => {
 
   return (
     <div>
+      
       <h2>Phonebook</h2>
+      <Notification message={notification.message} type={notification.type} />
       <Filter searchTerm={searchTerm} handleSearchChange={handleSearchChange}/>
       <h3>Add New</h3>
       <PersonForm addName={addName} handleNameChange={handleNameChange} handlePhoneChange={handlePhoneChange} newPhone={newPhone} newName={newName}/>
