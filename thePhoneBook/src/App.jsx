@@ -3,6 +3,7 @@ import Filter from './Filter'
 import Persons from './Persons'
 import PersonForm from './PersonForm'
 import axios from 'axios'
+import server from './service/server'
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
@@ -11,14 +12,12 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    console.log("useEffect starts");
-    axios
-    .get('http://localhost:3002/persons')
-    .then(response => {
-      console.log(response.data)
-      setPersons(response.data)
-      console.log(persons)
-    })
+     server
+    .getAll()
+    .then(initResponse => {
+      setPersons(initResponse)
+      console.log(initResponse)
+     })
   }, [])
 
   const addName = (event) => {
@@ -29,23 +28,41 @@ const App = () => {
     } else {
       const personObject = {
         name: newName,
-        phone: newPhone
+        number: newPhone
       };
-    
-      setPersons(persons.concat(personObject));
-      setNewName('');
-      setNewPhone('')
+      server
+      .create(personObject)
+      .then(returnedResponse => {
+        setPersons(persons.concat(returnedResponse));
+        setNewName('');
+        setNewPhone('');
+      })
+       
     }    
   }
 
+  const deletePerson = (id) => {
+
+    const confirm = window.confirm('You sure about this?')
+
+    if (!confirm){
+      return;
+    }
+
+    console.log(id)
+    server.deletePhone(id)
+    .then( () => {  
+      setPersons(persons.filter(person => person.id !== id));
+    }
+     )
+  }
+
   const handleNameChange = (event) => {
-    console.log(event.target.value)
-    setNewName(event.target.value)
+     setNewName(event.target.value)
   }
 
   const handlePhoneChange = (event) => {
-    console.log(event.target.value)
-    setNewPhone(event.target.value)
+     setNewPhone(event.target.value)
   }
 
   const handleSearchChange = (event) => {
@@ -63,7 +80,7 @@ const App = () => {
       <h3>Add New</h3>
       <PersonForm addName={addName} handleNameChange={handleNameChange} handlePhoneChange={handlePhoneChange} newPhone={newPhone} newName={newName}/>
       <h3>Numbers</h3>
-      <Persons persons={persons} filteredPersons={filteredPersons}/> 
+      <Persons filteredPersons={filteredPersons} deletePerson={deletePerson}/> 
     </div>
   )
 }
